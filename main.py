@@ -3,10 +3,15 @@ from io import BytesIO
 
 import requests
 from PIL import Image, ImageQt
+from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton
 
 SCREEN_SIZE = [600, 480]
+
+
+# Эйфелева башня
+# 48.858215, 2.294348
 
 
 class Example(QWidget):
@@ -14,12 +19,24 @@ class Example(QWidget):
         super().__init__()
         self.lat = 0  # широта
         self.lng = 0  # долгота
-        #self.getImage()
+        self.MapScale = 0.002
         self.initUI()
 
+    def keyPressEvent(self, event):
+        if event.key() in [QtCore.Qt.Key_PageUp, QtCore.Qt.Key_PageDown] and self.lng and self.lat:
+            if event.key() == QtCore.Qt.Key_PageUp:
+                self.MapScale -= 0.0008
+                if self.MapScale < 0:
+                    self.MapScale = 0
+            elif event.key() == QtCore.Qt.Key_PageDown:  # Key_PageUp:
+                self.MapScale += 0.0008
+                if self.MapScale > 17:
+                    self.MapScale = 17
+            self.remap()
 
     def getImage(self):
-        map_request = f"http://static-maps.yandex.ru/1.x/?ll={self.lng},{self.lat}&spn=0.002,0.002&l=map"
+        map_request = f"http://static-maps.yandex.ru/1.x/?ll=" \
+                      f"{self.lng},{self.lat}&spn={self.MapScale},{self.MapScale}&l=map"
         response = requests.get(map_request)
 
         if not response:
@@ -33,7 +50,6 @@ class Example(QWidget):
     def initUI(self):
         self.setGeometry(100, 100, *SCREEN_SIZE)
         self.setWindowTitle('Отображение карты')
-
 
         # self.label = QLabel(self)
         # self.label.setText("Привет, неопознанный лев")
@@ -61,9 +77,11 @@ class Example(QWidget):
     def redraw(self):
         self.lat = self.coords.text().split(", ")[0]
         self.lng = self.coords.text().split(", ")[1]
+        self.remap()
+
+    def remap(self):
         self.getImage()
         self.image.setPixmap(QPixmap.fromImage(self.img))
-
 
 
 if __name__ == '__main__':
