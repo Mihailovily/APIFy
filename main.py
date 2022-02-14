@@ -24,7 +24,7 @@ class Example(QWidget):
 
     def keyPressEvent(self, event):
         if event.key() in [QtCore.Qt.Key_PageUp, QtCore.Qt.Key_PageDown, QtCore.Qt.Key_Right, QtCore.Qt.Key_Left,
-                           QtCore.Qt.Key_Up, QtCore.Qt.Key_Down] and self.lng and self.lat:
+                           QtCore.Qt.Key_Up, QtCore.Qt.Key_Down, QtCore.Qt.Key_C, 1057] and self.lng and self.lat:
             if event.key() == QtCore.Qt.Key_PageUp:
                 self.MapScale -= 0.0008
                 if self.MapScale < 0:
@@ -41,6 +41,8 @@ class Example(QWidget):
                 self.lat += 0.0002
             if event.key() == QtCore.Qt.Key_Down:
                 self.lat -= 0.0002
+            if event.key() in (QtCore.Qt.Key_C, 1057):
+                self.reset_map()
 
             self.remap()
 
@@ -67,7 +69,7 @@ class Example(QWidget):
         self.name_label.move(0, 5)
 
         self.coords = QLineEdit(self)
-        #self.coords.setText("48.858215, 2.294348")
+        self.coords.setText("48.858215, 2.294348")
         self.coords.resize(185, 20)
         self.coords.move(215, 5)
 
@@ -76,10 +78,14 @@ class Example(QWidget):
         self.input_coords.move(410, 4)
         self.input_coords.clicked.connect(self.redraw)
 
-        self.reset = QPushButton("Сбросить", self)
-        self.reset.resize(self.reset.sizeHint())
-        self.reset.move(510, 4)
-        self.reset.clicked.connect(self.reset_map)
+        self.reset_text = QLabel('"C" для сброса', self)
+        self.reset_text.setFont(QFont("Arial", 10, QFont.Bold))
+        self.reset_text.move(490, 7)
+
+        # self.reset = QPushButton("Сбросить", self)
+        # self.reset.resize(self.reset.sizeHint())
+        # self.reset.move(510, 4)
+        # self.reset.clicked.connect(self.reset_map)
 
         self.image = QLabel(self)
         self.image.move(0, 30)
@@ -95,7 +101,7 @@ class Example(QWidget):
     def reset_map(self):
         self.coords.setEnabled(True)
         self.input_coords.setEnabled(True)
-        self.coords.setText("")
+        self.coords.setText("48.858215, 2.294348")
         self.lat = 0  # широта
         self.lng = 0  # долгота
         self.MapScale = 0.002
