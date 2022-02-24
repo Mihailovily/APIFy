@@ -7,7 +7,7 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton
 
-SCREEN_SIZE = [600, 480]
+SCREEN_SIZE = [600, 520]
 
 
 # Эйфелева башня
@@ -66,41 +66,60 @@ class Example(QWidget):
         self.name_label = QLabel(self)
         self.name_label.setText("Введите координаты: ")
         self.name_label.setFont(QFont("Roboto", 13, QFont.Bold))
-        self.name_label.move(0, 5)
+        self.name_label.move(5, 4)
+
+        self.error_text = QLabel(self)
+        self.error_text.setText("                 ")
+        self.error_text.setStyleSheet("color: red")
+        self.error_text.setFont(QFont("Roboto", 13))
+        self.error_text.move(505, 30)
 
         self.coords = QLineEdit(self)
         self.coords.setText("48.858215, 2.294348")
         self.coords.resize(185, 20)
         self.coords.move(215, 5)
 
+        self.address_text = QLineEdit(self)
+        self.address_text.setText("Париж, Эйфелева башня")
+        self.address_text.resize(395, 20)
+        self.address_text.move(5, 35)
+
         self.input_coords = QPushButton("Ввести", self)
         self.input_coords.resize(self.input_coords.sizeHint())
         self.input_coords.move(410, 4)
         self.input_coords.clicked.connect(self.redraw)
 
+        self.input_address = QPushButton("Ввести", self)
+        self.input_address.resize(self.input_coords.sizeHint())
+        self.input_address.move(410, 33)
+        self.input_address.clicked.connect(self.search_address)
+
         self.reset_text = QLabel('"C" для сброса', self)
         self.reset_text.setFont(QFont("Arial", 10, QFont.Bold))
-        self.reset_text.move(490, 7)
-
-        # self.reset = QPushButton("Сбросить", self)
-        # self.reset.resize(self.reset.sizeHint())
-        # self.reset.move(510, 4)
-        # self.reset.clicked.connect(self.reset_map)
+        self.reset_text.move(495, 15)
 
         self.image = QLabel(self)
-        self.image.move(0, 30)
+        self.image.move(0, 70)
         self.image.resize(600, 450)
 
     def redraw(self):
         self.lat = float(self.coords.text().split(", ")[0])
         self.lng = float(self.coords.text().split(", ")[1])
+        self.block_inputs()
+        self.error_text.setText("                 ")
+        self.remap()
+
+    def block_inputs(self):
         self.coords.setEnabled(False)
         self.input_coords.setEnabled(False)
-        self.remap()
+        self.input_address.setEnabled(False)
+        self.address_text.setEnabled(False)
 
     def reset_map(self):
         self.coords.setEnabled(True)
         self.input_coords.setEnabled(True)
+        self.input_address.setEnabled(True)
+        self.address_text.setEnabled(True)
         self.coords.setText("48.858215, 2.294348")
         self.lat = 0  # широта
         self.lng = 0  # долгота
@@ -110,6 +129,31 @@ class Example(QWidget):
     def remap(self):
         self.getImage()
         self.image.setPixmap(QPixmap.fromImage(self.img))
+
+    def search_address(self):
+        response = requests.get(
+            "http://geocode-maps.yandex.ru/1.x/?apikey=40d1649f-0493-4b70-98ba-98533de7710b&geocode="
+            + self.address_text.text() + "&format=json")
+        json_response = response.json()
+        if json_response["response"]["GeoObjectCollection"]["featureMember"]:
+            # Запрос успешно выполнен, печатаем полученные данные.
+            print(json_response)
+            toponym = json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]
+            # Полный адрес топонима:
+            toponym_address = toponym["metaDataProperty"]["GeocoderMetaData"]["text"]
+            # Координаты центра топонима:
+            toponym_coodrinates = toponym["Point"]["pos"]
+            # Печатаем извлечённые из ответа поля:
+            print(toponym_address, "имеет координаты:", toponym_coodrinates)
+            self.lat = float(toponym_coodrinates.split()[1])
+            self.lng = float(toponym_coodrinates.split()[0])
+            self.block_inputs()
+            self.error_text.setText("                 ")
+            self.remap()
+        else:
+            # Произошла ошибка выполнения запроса. Обрабатываем http-статус.
+            print("Ошибка выполнения запроса")
+            self.error_text.setText("Ошибочка!")
 
 
 if __name__ == '__main__':
